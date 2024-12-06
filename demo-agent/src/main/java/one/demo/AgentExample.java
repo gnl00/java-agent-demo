@@ -11,6 +11,8 @@ import java.io.ByteArrayInputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.ProtectionDomain;
 
 public class AgentExample {
@@ -29,6 +31,13 @@ public class AgentExample {
                 }
 
                 byte[] transformed = null;
+                // 使用 javassist 来操作 Java 字节码，方便
+                /*
+                 * 除了 javassist 还可以直接读取本地的 class 然后返回
+                    if (className.equals("one/demo/DemoClass")) {
+                        return Files.readAllBytes(Paths.get("path-to/one/demo/DemoClass.class"));
+                    }
+                 */
                 CtClass cl = null;
                 try {
                     // CtClass、ClassPool、CtMethod、ExprEditor 都是javassist提供的字节码操作的类。Ct= ClassType
@@ -40,11 +49,14 @@ public class AgentExample {
                         method.instrument(new ExprEditor() {
                             @Override
                             public void edit(MethodCall m) throws CannotCompileException {
-                                // 修改方法调用
-                                // m.replace("{ System.out.println(\"MethodCall: \" + $1); $proceed($$); }");
-                                m.replace("{ long stime = System.currentTimeMillis();" + " $_ = $proceed($$);"
-                                        + "System.out.println(\"" + m.getClassName() + "." + m.getMethodName()
-                                        + " cost:\" + (System.currentTimeMillis() - stime) + \" ms\"); }");
+                                System.out.println(m.getMethodName());
+                                if (m.getMethodName().equals("timer")) {
+                                    // 修改方法调用
+                                    // m.replace("{ System.out.println(\"MethodCall: \" + $1); $proceed($$); }");
+                                    m.replace("{ long stime = System.currentTimeMillis();" + " $_ = $proceed($$);"
+                                            + "System.out.println(\"" + m.getClassName() + "." + m.getMethodName()
+                                            + " cost:\" + (System.currentTimeMillis() - stime) + \" ms\"); }");
+                                }
                             }
                         });
                     }
